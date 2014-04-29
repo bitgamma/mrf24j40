@@ -25,8 +25,6 @@
 #ifndef MRF24J40_H
 #define	MRF24J40_H
 
-#include "config.h"
-
 /* Return values */
 #define MRF24J40_INT_RX		0x01
 #define MRF24J40_INT_TX		0x02
@@ -145,6 +143,18 @@
 #define MAINCNT1	0x227
 #define MAINCNT2	0x228
 #define MAINCNT3	0x229
+
+#define ASSOEADR0       0x230
+#define ASSOEADR1       0x231
+#define ASSOEADR2       0x232
+#define ASSOEADR3       0x233
+#define ASSOEADR4       0x234
+#define ASSOEADR5       0x235
+#define ASSOEADR6       0x236
+#define ASSOEADR7       0x237
+
+#define ASSOSADR0       0x238
+#define ASSOSADR1       0x239
 
 #define UPNONCE0	0x240
 #define UPNONCE1	0x241
@@ -298,7 +308,7 @@
 #define RSSIRDY		(1)
 
 /* RFCON0 */
-#define CHANNEL(x)	(((x - 11) & 0x0F) << 4)
+#define CHANNEL(x)	((x & 0x0F) << 4)
 #define RFOPT(x)	((x & 0x0F))
 
 /* RFCON1 */
@@ -338,10 +348,12 @@ void mrf24j40_write_long_ctrl_reg(unsigned short addr, unsigned char value);
 void mrf24j40_write_short_ctrl_reg(unsigned char addr, unsigned char value);
 void mrf24j40_rxfifo_flush(void);
 void mrf24j40_hard_reset(void);
-void mrf24j40_init(int ch);
+void mrf24j40_initialize(void);
 void mrf24j40_sleep(int spi_wake);
 void mrf24j40_wakeup(int spi_wake);
 void mrf24j40_set_short_addr(unsigned char *addr);
+void mrf24j40_set_coordinator_short_addr(unsigned char *addr);
+void mrf24j40_set_coordinator_eui(unsigned char *eui);
 void mrf24j40_set_eui(unsigned char *eui);
 void mrf24j40_set_pan(unsigned char *pan);
 void mrf24j40_set_channel(int ch);
@@ -353,11 +365,14 @@ unsigned char mrf24j40_get_channel(void);
 int mrf24j40_int_tasks(void);
 int mrf24j40_rxpkt_intcb(unsigned char *buf, unsigned char *plqi, unsigned char *prssi);
 int mrf24j40_txpkt_intcb(void);
+
+#ifdef MRF24J40_UPPER_LAYER_ENC_DEC
 int mrf24j40_sec_intcb(int accept);
 int mrf24j40_check_rx_dec(int no_err_flush);
 int mrf24j40_check_enc(void);
 int mrf24j40_check_dec(void);
 void mrf24j40_set_encdec(int types, int mode, unsigned char *key, int klen);
 void mrf24j40_encdec(unsigned char *nonce, int nonce_len, unsigned char *frame, int hdr_len, int payload_len, int enc);
+#endif
 
 #endif /* MRF24J40_H */

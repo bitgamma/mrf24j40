@@ -22,55 +22,55 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
+#include "config.h"
 #include "MRF24J40.h"
 
 #include <xc.h>
 #include <stdlib.h>
-#include <plib/spi.h>
 
 static int internal_state = 0;
 
-#define MRF24J40_SPI_PREAMBLE() volatile unsigned char tmpIE = MRF24J40_IE; MRF24J40_IE = 0; MRF24J40_CS = 0;
-#define MRF24J40_SPI_POSTAMBLE() MRF24J40_CS = 1; MRF24J40_IE = tmpIE;
+#define mrf24j40_spi_preamble() volatile unsigned char tmpIE = MRF24J40_IE; MRF24J40_IE = 0; MRF24J40_CS = 0;
+#define mrf24j40_spi_postamble() MRF24J40_CS = 1; MRF24J40_IE = tmpIE;
 
 void _mrf24j40_write_long_addr(unsigned short addr, unsigned char write) {
-  MRF24J40_SPI_WRITE(((addr >> 3) & 0x7F) | 0x80);
-  MRF24J40_SPI_WRITE(((addr << 5) & 0xE0) | (write << 4));
+  mrf24j40_spi_write(((addr >> 3) & 0x7F) | 0x80);
+  mrf24j40_spi_write(((addr << 5) & 0xE0) | (write << 4));
 }
 
 void _mrf24j40_write_short_addr(unsigned char addr, unsigned char write) {
-  MRF24J40_SPI_WRITE(((addr << 1) & 0x7E) | write);
+  mrf24j40_spi_write(((addr << 1) & 0x7E) | write);
 }
 
 unsigned char mrf24j40_read_long_ctrl_reg(unsigned short addr) {
-  MRF24J40_SPI_PREAMBLE();
+  mrf24j40_spi_preamble();
   _mrf24j40_write_long_addr(addr, 0);
-  unsigned char value = MRF24J40_SPI_READ();
-  MRF24J40_SPI_POSTAMBLE();
+  unsigned char value = mrf24j40_spi_read();
+  mrf24j40_spi_postamble();
 
   return value;
 }
 
 unsigned char mrf24j40_read_short_ctrl_reg(unsigned char addr) {
-  MRF24J40_SPI_PREAMBLE();
+  mrf24j40_spi_preamble();
   _mrf24j40_write_short_addr(addr, 0);
-  unsigned char value = MRF24J40_SPI_READ();
-  MRF24J40_SPI_POSTAMBLE();
+  unsigned char value = mrf24j40_spi_read();
+  mrf24j40_spi_postamble();
   return value;
 }
 
 void mrf24j40_write_long_ctrl_reg(unsigned short addr, unsigned char value) {
-  MRF24J40_SPI_PREAMBLE();
+  mrf24j40_spi_preamble();
   _mrf24j40_write_long_addr(addr, 1);
-  MRF24J40_SPI_WRITE(value);
-  MRF24J40_SPI_POSTAMBLE();
+  mrf24j40_spi_write(value);
+  mrf24j40_spi_postamble();
 }
 
 void mrf24j40_write_short_ctrl_reg(unsigned char addr, unsigned char value) {
-  MRF24J40_SPI_PREAMBLE();
+  mrf24j40_spi_preamble();
   _mrf24j40_write_short_addr(addr, 1);
-  MRF24J40_SPI_WRITE(value);
-  MRF24J40_SPI_POSTAMBLE();
+  mrf24j40_spi_write(value);
+  mrf24j40_spi_postamble();
 }
 
 void mrf24j40_ie(void) {
@@ -151,6 +151,22 @@ void mrf24j40_set_eui(unsigned char *eui) {
   mrf24j40_write_short_ctrl_reg(EADR7, eui[7]);
 }
 
+void mrf24j40_set_coordinator_short_addr(unsigned char *addr) {
+  mrf24j40_write_short_ctrl_reg(ASSOSADR0, addr[0]);
+  mrf24j40_write_short_ctrl_reg(ASSOSADR1, addr[1]);
+}
+
+void mrf24j40_set_coordinator_eui(unsigned char *eui) {
+  mrf24j40_write_short_ctrl_reg(ASSOEADR0, eui[0]);
+  mrf24j40_write_short_ctrl_reg(ASSOEADR1, eui[1]);
+  mrf24j40_write_short_ctrl_reg(ASSOEADR2, eui[2]);
+  mrf24j40_write_short_ctrl_reg(ASSOEADR3, eui[3]);
+  mrf24j40_write_short_ctrl_reg(ASSOEADR4, eui[4]);
+  mrf24j40_write_short_ctrl_reg(ASSOEADR5, eui[5]);
+  mrf24j40_write_short_ctrl_reg(ASSOEADR6, eui[6]);
+  mrf24j40_write_short_ctrl_reg(ASSOEADR7, eui[7]);
+}
+
 void mrf24j40_hard_reset() {
   MRF24J40_RESET = 0;
 
@@ -162,8 +178,8 @@ void mrf24j40_hard_reset() {
   __delay_us(192);
 }
 
-void mrf24j40_init(int ch) {
-  MRF24J40_OPEN_SPI();
+void mrf24j40_initialize() {
+  MRF24J40_CS = 1;
   MRF24J40_WAKE = 0;
   
   mrf24j40_hard_reset();
@@ -174,7 +190,6 @@ void mrf24j40_init(int ch) {
 
   mrf24j40_write_short_ctrl_reg(PACON2, FIFOEN | TXONTS(0x18));
   mrf24j40_write_short_ctrl_reg(TXSTBL, RFSTBL(9) | MSIFS(5));
-  mrf24j40_write_long_ctrl_reg(RFCON0, CHANNEL(ch) | RFOPT(0x03));
   mrf24j40_write_long_ctrl_reg(RFCON1, VCOOPT(0x01));
   mrf24j40_write_long_ctrl_reg(RFCON2, PLLEN);
   mrf24j40_write_long_ctrl_reg(RFCON6, _20MRECVR);
@@ -190,8 +205,6 @@ void mrf24j40_init(int ch) {
   mrf24j40_rxfifo_flush();
   
   mrf24j40_ie();
-
-  mrf24j40_rf_reset();
 }
 
 void mrf24j40_sleep(int spi_wake) {
@@ -219,62 +232,20 @@ void mrf24j40_wakeup(int spi_wake) {
   mrf24j40_rf_reset();
 }
 
-void mrf24j40_set_encdec(int types, int mode, unsigned char *key, int klen) {
-  unsigned char *keyp;
-
-  unsigned char w = mrf24j40_read_short_ctrl_reg(SECCON0);
-
-  if (types & MRF24J40_TX_KEY) {
-    MRF24J40_SPI_PREAMBLE();
-    _mrf24j40_write_long_addr(SECKTXNFIFO, 1);
-
-    keyp = key;
-
-    int len = klen;
-
-    while (len-- > 0) {
-      MRF24J40_SPI_WRITE(*keyp++);
-    }
-
-    MRF24J40_SPI_POSTAMBLE();
-
-
-    w |= TXNCIPHER(mode);
-    mrf24j40_write_short_ctrl_reg(SECCON0, w);
-  }
-
-  if (types & MRF24J40_RX_KEY) {
-    MRF24J40_SPI_PREAMBLE();
-    _mrf24j40_write_long_addr(SECKRXFIFO, 1);
-
-    keyp = key;
-    int len = klen;
-
-    while (len-- > 0) {
-      MRF24J40_SPI_WRITE(*keyp++);
-    }
-
-    MRF24J40_SPI_POSTAMBLE();
-
-    w |= RXCIPHER(mode);
-    mrf24j40_write_short_ctrl_reg(SECCON0, w);
-  }
-}
-
 void mrf24j40_txpkt(unsigned char *frame, int hdr_len, int payload_len) {
   internal_state = 0;
   int frame_len = hdr_len+payload_len;
 
-  MRF24J40_SPI_PREAMBLE();
+  mrf24j40_spi_preamble();
   _mrf24j40_write_long_addr(TXNFIFO, 1);
-  MRF24J40_SPI_WRITE(hdr_len);
-  MRF24J40_SPI_WRITE(frame_len);
+  mrf24j40_spi_write(hdr_len);
+  mrf24j40_spi_write(frame_len);
 
   while (frame_len-- > 0) {
-    MRF24J40_SPI_WRITE(*frame++);
+    mrf24j40_spi_write(*frame++);
   }
   
-  MRF24J40_SPI_POSTAMBLE();
+  mrf24j40_spi_postamble();
 
   unsigned char w = mrf24j40_read_short_ctrl_reg(TXNCON);
   w &= ~(TXNSECEN);
@@ -303,43 +274,20 @@ int mrf24j40_txpkt_intcb(void) {
   }
 }
 
-int mrf24j40_sec_intcb(int accept) {
-  unsigned char w = mrf24j40_read_short_ctrl_reg(SECCON0);
-  
-  w &= ~(SECSTART | SECIGNORE);
-
-  if (accept) {
-    mrf24j40_write_short_ctrl_reg(SECCON0, w | SECSTART);
-  } else {
-    mrf24j40_write_short_ctrl_reg(SECCON0, w | SECIGNORE);
-    mrf24j40_write_short_ctrl_reg(RXFLUSH, _RXFLUSH);
-  }
-}
-
-int mrf24j40_check_rx_dec(int no_err_flush) {
-  int err = (mrf24j40_read_short_ctrl_reg(RXSR) & SECDECERR) ? EIO : 0;
-
-  if (err && !no_err_flush) {
-    mrf24j40_write_short_ctrl_reg(RXFLUSH, _RXFLUSH);
-  }
-
-  return err;
-}
-
 int mrf24j40_rxpkt_intcb(unsigned char *buf, unsigned char *plqi, unsigned char *prssi) {
   mrf24j40_write_short_ctrl_reg(BBREG1, mrf24j40_read_short_ctrl_reg(BBREG1) | RXDECINV);
 
-  MRF24J40_SPI_PREAMBLE();
+  mrf24j40_spi_preamble();
   _mrf24j40_write_long_addr(RXFIFO, 0);
 
-  unsigned int flen = MRF24J40_SPI_READ();
+  unsigned int flen = mrf24j40_spi_read();
 
   for (unsigned int i = 0; i < flen; i++) {
-    *buf++ = MRF24J40_SPI_READ();
+    *buf++ = mrf24j40_spi_read();
   }
 
-  unsigned char lqi = MRF24J40_SPI_READ();
-  unsigned char rssi = MRF24J40_SPI_READ();
+  unsigned char lqi = mrf24j40_spi_read();
+  unsigned char rssi = mrf24j40_spi_read();
 
   if (plqi != NULL) {
     *plqi = lqi;
@@ -349,27 +297,12 @@ int mrf24j40_rxpkt_intcb(unsigned char *buf, unsigned char *plqi, unsigned char 
     *prssi = rssi;
   }
 
-  MRF24J40_SPI_POSTAMBLE();
+  mrf24j40_spi_postamble();
 
   mrf24j40_rxfifo_flush();
   mrf24j40_write_short_ctrl_reg(BBREG1, mrf24j40_read_short_ctrl_reg(BBREG1) & ~RXDECINV);
   
   return flen;
-}
-
-int mrf24j40_check_enc(void) {
-  return mrf24j40_txpkt_intcb();
-}
-
-int mrf24j40_check_dec(void) {
-  int error;
-
-  if ((error = mrf24j40_txpkt_intcb()) != 0) {
-    return error;
-  }
-
-  unsigned char w = mrf24j40_read_short_ctrl_reg(RXSR);
-  return (w & UPSECERR) ? EIO : 0;
 }
 
 int mrf24j40_int_tasks(void) {
@@ -405,6 +338,87 @@ int mrf24j40_int_tasks(void) {
   return ret;
 }
 
+#ifdef MRF24J40_UPPER_LAYER_ENC_DEC
+int mrf24j40_sec_intcb(int accept) {
+  unsigned char w = mrf24j40_read_short_ctrl_reg(SECCON0);
+  
+  w &= ~(SECSTART | SECIGNORE);
+
+  if (accept) {
+    mrf24j40_write_short_ctrl_reg(SECCON0, w | SECSTART);
+  } else {
+    mrf24j40_write_short_ctrl_reg(SECCON0, w | SECIGNORE);
+    mrf24j40_write_short_ctrl_reg(RXFLUSH, _RXFLUSH);
+  }
+}
+
+int mrf24j40_check_rx_dec(int no_err_flush) {
+  int err = (mrf24j40_read_short_ctrl_reg(RXSR) & SECDECERR) ? EIO : 0;
+
+  if (err && !no_err_flush) {
+    mrf24j40_write_short_ctrl_reg(RXFLUSH, _RXFLUSH);
+  }
+
+  return err;
+}
+
+int mrf24j40_check_enc(void) {
+  return mrf24j40_txpkt_intcb();
+}
+
+int mrf24j40_check_dec(void) {
+  int error;
+
+  if ((error = mrf24j40_txpkt_intcb()) != 0) {
+    return error;
+  }
+
+  unsigned char w = mrf24j40_read_short_ctrl_reg(RXSR);
+  return (w & UPSECERR) ? EIO : 0;
+}
+
+void mrf24j40_set_encdec(int types, int mode, unsigned char *key, int klen) {
+  unsigned char *keyp;
+
+  unsigned char w = mrf24j40_read_short_ctrl_reg(SECCON0);
+
+  if (types & MRF24J40_TX_KEY) {
+    mrf24j40_spi_preamble();
+    _mrf24j40_write_long_addr(SECKTXNFIFO, 1);
+
+    keyp = key;
+
+    int len = klen;
+
+    while (len-- > 0) {
+      mrf24j40_spi_write(*keyp++);
+    }
+
+    mrf24j40_spi_postamble();
+
+
+    w |= TXNCIPHER(mode);
+    mrf24j40_write_short_ctrl_reg(SECCON0, w);
+  }
+
+  if (types & MRF24J40_RX_KEY) {
+    mrf24j40_spi_preamble();
+    _mrf24j40_write_long_addr(SECKRXFIFO, 1);
+
+    keyp = key;
+    int len = klen;
+
+    while (len-- > 0) {
+      mrf24j40_spi_write(*keyp++);
+    }
+
+    mrf24j40_spi_postamble();
+
+    w |= RXCIPHER(mode);
+    mrf24j40_write_short_ctrl_reg(SECCON0, w);
+  }
+}
+
 void mrf24j40_encdec(unsigned char *nonce, int nonce_len, unsigned char *frame, int hdr_len, int payload_len, int enc) {
   if (enc) {
     internal_state = MRF24J40_STATE_UPENC;
@@ -425,4 +439,4 @@ void mrf24j40_encdec(unsigned char *nonce, int nonce_len, unsigned char *frame, 
 
   mrf24j40_txpkt(frame, hdr_len, payload_len);
 }
-
+#endif
