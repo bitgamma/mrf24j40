@@ -95,7 +95,7 @@ void mrf24j40_rf_reset(void) {
 
   mrf24j40_write_short_ctrl_reg(RFCTL, old | RFRST);
   mrf24j40_write_short_ctrl_reg(RFCTL, old & ~RFRST);
-  __delay_us(192);
+  __delay_ms(2);
 }
 
 void mrf24j40_rxfifo_flush(void) {

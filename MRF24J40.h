@@ -33,8 +33,8 @@
 #define MRF24J40_INT_ENC	0x10
 #define MRF24J40_INT_DEC	0x20
 
-#define EIO			5
-#define EBUSY			16
+#define EIO			1
+#define EBUSY			2
 
 /* IEEE 802.15.4 constants needed for some flags */
 #define IEEE_802_15_4_HAS_SEC(x)      ((x >> 3) & 0x01)
