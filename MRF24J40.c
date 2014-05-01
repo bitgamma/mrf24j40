@@ -98,6 +98,10 @@ void mrf24j40_rf_reset(void) {
   __delay_ms(2);
 }
 
+unsigned char mrf24j40_get_pending_frame(void) {
+  return (mrf24j40_read_short_ctrl_reg(TXNCON) >> 4) & 0x01;
+}
+
 void mrf24j40_rxfifo_flush(void) {
   mrf24j40_write_short_ctrl_reg(RXFLUSH, (mrf24j40_read_short_ctrl_reg(RXFLUSH) | _RXFLUSH));
 }
@@ -105,10 +109,6 @@ void mrf24j40_rxfifo_flush(void) {
 void mrf24j40_set_channel(int ch) {
   mrf24j40_write_long_ctrl_reg(RFCON0, CHANNEL(ch) | RFOPT(0x03));
   mrf24j40_rf_reset();
-}
-
-unsigned char mrf24j40_get_channel(void) {
-  return (11 + (mrf24j40_read_long_ctrl_reg(RFCON0) >> 4));
 }
 
 void mrf24j40_set_promiscuous(int crc_check) {

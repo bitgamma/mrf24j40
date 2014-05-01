@@ -347,6 +347,7 @@ unsigned char mrf24j40_read_short_ctrl_reg(unsigned char addr);
 void mrf24j40_write_long_ctrl_reg(unsigned short addr, unsigned char value);
 void mrf24j40_write_short_ctrl_reg(unsigned char addr, unsigned char value);
 void mrf24j40_rxfifo_flush(void);
+unsigned char mrf24j40_get_pending_frame(void);
 void mrf24j40_hard_reset(void);
 void mrf24j40_initialize(void);
 void mrf24j40_sleep(int spi_wake);
