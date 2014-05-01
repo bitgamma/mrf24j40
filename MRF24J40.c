@@ -236,17 +236,6 @@ void mrf24j40_txpkt(unsigned char *frame, int hdr_len, int payload_len) {
   internal_state = 0;
   int frame_len = hdr_len+payload_len;
 
-  mrf24j40_spi_preamble();
-  _mrf24j40_write_long_addr(TXNFIFO, 1);
-  mrf24j40_spi_write(hdr_len);
-  mrf24j40_spi_write(frame_len);
-
-  while (frame_len-- > 0) {
-    mrf24j40_spi_write(*frame++);
-  }
-  
-  mrf24j40_spi_postamble();
-
   unsigned char w = mrf24j40_read_short_ctrl_reg(TXNCON);
   w &= ~(TXNSECEN);
 
@@ -257,6 +246,17 @@ void mrf24j40_txpkt(unsigned char *frame, int hdr_len, int payload_len) {
   if (IEEE_802_15_4_WANTS_ACK(frame[0])) {
     w |= TXNACKREQ;
   }
+
+  mrf24j40_spi_preamble();
+  _mrf24j40_write_long_addr(TXNFIFO, 1);
+  mrf24j40_spi_write(hdr_len);
+  mrf24j40_spi_write(frame_len);
+
+  while (frame_len-- > 0) {
+    mrf24j40_spi_write(*frame++);
+  }
+  
+  mrf24j40_spi_postamble();
 
   mrf24j40_write_short_ctrl_reg(TXNCON, w | TXNTRIG);
 }
