@@ -25,13 +25,12 @@
 #include "config.h"
 #include "MRF24J40.h"
 
-#include <xc.h>
 #include <stdlib.h>
 
 static int internal_state = 0;
 
-#define mrf24j40_spi_preamble() volatile unsigned char tmpIE = MRF24J40_IE; MRF24J40_IE = 0; MRF24J40_CS = 0;
-#define mrf24j40_spi_postamble() MRF24J40_CS = 1; MRF24J40_IE = tmpIE;
+#define mrf24j40_spi_preamble() volatile unsigned char tmpIE = mrf24j40_get_ie(); mrf24j40_set_ie(0); mrf24j40_cs_pin(0);
+#define mrf24j40_spi_postamble() mrf24j40_cs_pin(1); mrf24j40_set_ie(tmpIE);
 
 void _mrf24j40_write_long_addr(unsigned short addr, unsigned char write) {
   mrf24j40_spi_write(((addr >> 3) & 0x7F) | 0x80);
@@ -95,7 +94,7 @@ void mrf24j40_rf_reset(void) {
 
   mrf24j40_write_short_ctrl_reg(RFCTL, old | RFRST);
   mrf24j40_write_short_ctrl_reg(RFCTL, old & ~RFRST);
-  __delay_ms(2);
+  mrf24j40_delay_ms(2);
 }
 
 unsigned char mrf24j40_get_pending_frame(void) {
@@ -168,25 +167,23 @@ void mrf24j40_set_coordinator_eui(unsigned char *eui) {
 }
 
 void mrf24j40_hard_reset() {
-  MRF24J40_RESET = 0;
+  mrf24j40_reset_pin(0);
 
   internal_state = 0;
-  __delay_us(192);
-
-  MRF24J40_RESET = 1;
-
-  __delay_us(192);
+  mrf24j40_delay_us(192);
+  mrf24j40_reset_pin(1);
+  mrf24j40_delay_us(192);
 }
 
 void mrf24j40_initialize() {
-  MRF24J40_CS = 1;
-  MRF24J40_WAKE = 0;
+  mrf24j40_cs_pin(1);
+  mrf24j40_wake_pin(0);
   
   mrf24j40_hard_reset();
   
   mrf24j40_write_short_ctrl_reg(SOFTRST, (RSTPWR | RSTBB | RSTMAC));
 
-  __delay_us(192);
+  mrf24j40_delay_us(192);
 
   mrf24j40_write_short_ctrl_reg(PACON2, FIFOEN | TXONTS(0x18));
   mrf24j40_write_short_ctrl_reg(TXSTBL, RFSTBL(9) | MSIFS(5));
@@ -213,7 +210,7 @@ void mrf24j40_sleep(int spi_wake) {
   unsigned char r = mrf24j40_read_short_ctrl_reg(SLPACK);
 
   if (!spi_wake) {
-    MRF24J40_WAKE = 0;
+    mrf24j40_wake_pin(0);
     mrf24j40_write_short_ctrl_reg(RXFLUSH, mrf24j40_read_short_ctrl_reg(RXFLUSH) | WAKEPAD | WAKEPOL);
   }
 
@@ -226,7 +223,7 @@ void mrf24j40_wakeup(int spi_wake) {
     mrf24j40_write_short_ctrl_reg(WAKECON, REGWAKE);
     mrf24j40_write_short_ctrl_reg(WAKECON, 0);
   } else {
-    MRF24J40_WAKE = 1;
+    mrf24j40_wake_pin(1);
   }
 
   mrf24j40_rf_reset();
