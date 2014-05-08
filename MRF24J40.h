@@ -25,6 +25,9 @@
 #ifndef MRF24J40_H
 #define	MRF24J40_H
 
+#include <stdint.h>
+#include <stdbool.h>
+
 /* Return values */
 #define MRF24J40_INT_RX		0x01
 #define MRF24J40_INT_TX		0x02
@@ -39,10 +42,6 @@
 /* IEEE 802.15.4 constants needed for some flags */
 #define IEEE_802_15_4_HAS_SEC(x)      ((x >> 3) & 0x01)
 #define IEEE_802_15_4_WANTS_ACK(x)     ((x >> 5) & 0x01)
-
-/* Internal state */
-#define MRF24J40_STATE_UPENC	0x01
-#define MRF24J40_STATE_UPDEC	0x02
 
 /* enc dec parameters */
 #define MRF24J40_TX_KEY		0x01
@@ -251,7 +250,6 @@
 #define UPSECERR	(1<<6)
 #define SECDECERR	(1<<2)
 
-
 /* INTSTAT */
 #define SLPIF		(1<<7)
 #define WAKEIF		(1<<6)
@@ -342,38 +340,35 @@
 #define SLPCLKDIV(x)	((x & 0x1F))	/* division ratio: 2^(SLPCLKDIV) */
 
 
-unsigned char mrf24j40_read_long_ctrl_reg(unsigned short addr);
-unsigned char mrf24j40_read_short_ctrl_reg(unsigned char addr);
-void mrf24j40_write_long_ctrl_reg(unsigned short addr, unsigned char value);
-void mrf24j40_write_short_ctrl_reg(unsigned char addr, unsigned char value);
+uint8_t mrf24j40_read_long_ctrl_reg(uint16_t addr);
+uint8_t mrf24j40_read_short_ctrl_reg(uint8_t addr);
+void mrf24j40_write_long_ctrl_reg(uint16_t addr, uint8_t value);
+void mrf24j40_write_short_ctrl_reg(uint8_t addr, uint8_t value);
 void mrf24j40_rxfifo_flush(void);
-unsigned char mrf24j40_get_pending_frame(void);
+uint8_t mrf24j40_get_pending_frame(void);
 void mrf24j40_hard_reset(void);
 void mrf24j40_initialize(void);
-void mrf24j40_sleep(int spi_wake);
-void mrf24j40_wakeup(int spi_wake);
-void mrf24j40_set_short_addr(unsigned char *addr);
-void mrf24j40_set_coordinator_short_addr(unsigned char *addr);
-void mrf24j40_set_coordinator_eui(unsigned char *eui);
-void mrf24j40_set_eui(unsigned char *eui);
-void mrf24j40_set_pan(unsigned char *pan);
-void mrf24j40_set_channel(int ch);
-void mrf24j40_set_promiscuous(int crc_check);
+void mrf24j40_sleep(int16_t spi_wake);
+void mrf24j40_wakeup(int16_t spi_wake);
+void mrf24j40_set_short_addr(uint8_t *addr);
+void mrf24j40_set_coordinator_short_addr(uint8_t *addr);
+void mrf24j40_set_coordinator_eui(uint8_t *eui);
+void mrf24j40_set_eui(uint8_t *eui);
+void mrf24j40_set_pan(uint8_t *pan);
+void mrf24j40_set_key(uint16_t address, uint8_t *key);
+#define mrf24j40_tx_key(key) mrf24j40_set_key(SECKTXNFIFO, key);
+#define mrf24j40_rx_key(key) mrf24j40_set_key(SECKRXFIFO, key);
+void mrf24j40_set_channel(int16_t ch);
+void mrf24j40_set_promiscuous(int16_t crc_check);
 void mrf24j40_set_coordinator(void);
 void mrf24j40_clear_coordinator(void);
-void mrf24j40_txpkt(unsigned char *frame, int hdr_len, int payload_len);
-unsigned char mrf24j40_get_channel(void);
-int mrf24j40_int_tasks(void);
-int mrf24j40_rxpkt_intcb(unsigned char *buf, unsigned char *plqi, unsigned char *prssi);
-int mrf24j40_txpkt_intcb(void);
-
-#ifdef MRF24J40_UPPER_LAYER_ENC_DEC
-int mrf24j40_sec_intcb(int accept);
-int mrf24j40_check_rx_dec(int no_err_flush);
-int mrf24j40_check_enc(void);
-int mrf24j40_check_dec(void);
-void mrf24j40_set_encdec(int types, int mode, unsigned char *key, int klen);
-void mrf24j40_encdec(unsigned char *nonce, int nonce_len, unsigned char *frame, int hdr_len, int payload_len, int enc);
-#endif
+void mrf24j40_txpkt(uint8_t *frame, int16_t hdr_len, int16_t sec_hdr_len, int16_t payload_len);
+void mrf24j40_set_cipher(uint8_t rxcipher, uint8_t txcipher);
+bool mrf24j40_rx_sec_fail();
+uint8_t mrf24j40_get_channel(void);
+int16_t mrf24j40_int_tasks(void);
+int16_t mrf24j40_rxpkt_intcb(uint8_t *buf, uint8_t *plqi, uint8_t *prssi);
+int16_t mrf24j40_txpkt_intcb(void);
+void mrf24j40_sec_intcb(bool accept);
 
 #endif /* MRF24J40_H */
