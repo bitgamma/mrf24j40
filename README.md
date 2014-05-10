@@ -13,7 +13,7 @@ This driver was mainly written to be used with the [OSNP Protocol Stack](https:/
 
 ## Examples
 
-Download [Gradusnik](https://github.com/briksoftware/mrf24j40) for an example of how to use this code.
+Download [Gradusnik](https://github.com/briksoftware/gradusnik) for an example of how to use this code.
 
 ## Notes
 
