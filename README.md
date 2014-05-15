@@ -1,7 +1,7 @@
 MRF24J40 Driver
 ============
 
-This is a cross-platform driver for the [MRF24J40](http://www.microchip.com/wwwproducts/Devices.aspx?product=MRF24J40) radio. It is known to work with the MRF24J40MA module and PIC18 devices, but it written in standard C. An minimal Hardware Abstraction Layer is needed to operate it on any device.
+This is a cross-platform driver for the [MRF24J40](http://www.microchip.com/wwwproducts/Devices.aspx?product=MRF24J40) radio. It is known to work with the MRF24J40MA module and PIC18 devices, but is written in standard C. A minimal Hardware Abstraction Layer is needed to operate it on any device.
 
 ## Features
 
