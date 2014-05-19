@@ -107,7 +107,7 @@ void mrf24j40_set_channel(int16_t ch) {
   mrf24j40_rf_reset();
 }
 
-void mrf24j40_set_promiscuous(int16_t crc_check) {
+void mrf24j40_set_promiscuous(bool crc_check) {
   uint8_t w = NOACKRSP;
   if (!crc_check) {
     w |= ERRPKT;
@@ -184,7 +184,7 @@ void mrf24j40_hard_reset() {
 
 void mrf24j40_initialize() {
   mrf24j40_cs_pin(1);
-  mrf24j40_wake_pin(0);
+  mrf24j40_wake_pin(1);
   
   mrf24j40_hard_reset();
   
@@ -200,6 +200,7 @@ void mrf24j40_initialize() {
   mrf24j40_write_long_ctrl_reg(RFCON7, SLPCLKSEL(0x02));
   mrf24j40_write_long_ctrl_reg(RFCON8, RFVCO);
   mrf24j40_write_long_ctrl_reg(SLPCON1, SLPCLKDIV(1) | CLKOUTDIS);
+  mrf24j40_write_short_ctrl_reg(RXFLUSH, (WAKEPAD | WAKEPOL));
 
   mrf24j40_write_short_ctrl_reg(BBREG2, CCAMODE(0x02) | CCASTH(0x00));
   mrf24j40_write_short_ctrl_reg(CCAEDTH, 0x60);
@@ -211,28 +212,18 @@ void mrf24j40_initialize() {
   mrf24j40_ie();
 }
 
-void mrf24j40_sleep(int16_t spi_wake) {
+void mrf24j40_sleep() {
   mrf24j40_write_short_ctrl_reg(WAKECON, IMMWAKE);
 
   uint8_t r = mrf24j40_read_short_ctrl_reg(SLPACK);
-
-  if (!spi_wake) {
-    mrf24j40_wake_pin(0);
-    mrf24j40_write_short_ctrl_reg(RXFLUSH, mrf24j40_read_short_ctrl_reg(RXFLUSH) | WAKEPAD | WAKEPOL);
-  }
+  mrf24j40_wake_pin(0);
 
   mrf24j40_pwr_reset();
   mrf24j40_write_short_ctrl_reg(SLPACK, r | _SLPACK);
 }
 
-void mrf24j40_wakeup(int16_t spi_wake) {
-  if (spi_wake) {
-    mrf24j40_write_short_ctrl_reg(WAKECON, REGWAKE);
-    mrf24j40_write_short_ctrl_reg(WAKECON, 0);
-  } else {
-    mrf24j40_wake_pin(1);
-  }
-
+void mrf24j40_wakeup() {
+  mrf24j40_wake_pin(1);
   mrf24j40_rf_reset();
 }
 
